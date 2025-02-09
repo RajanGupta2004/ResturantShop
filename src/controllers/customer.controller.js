@@ -114,3 +114,44 @@ export const customerLogin = async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
     }
 }
+
+
+export const GetCustomerProfile = async (req , res)=>{
+    try {
+        const customer = req.user
+
+        const customerProfile = await  Customer.findById(customer._id)
+        if (!customerProfile) {
+            return res.status(200).json(new ApiResponse(404 , "Customer Not found"))
+        }
+
+        return res.status(200).json(new ApiResponse(200 , "customer profile" , customerProfile));
+        
+    } catch (error) {
+        console.log("Error in to get user profile" , error)
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+
+    }
+}
+
+export const EditCustomerProfile = async (req, res) => {
+    try {
+      const { firstName, lastName, address } = req.body;
+  
+      const customer = await Customer.findByIdAndUpdate(
+        req.user._id,
+        { firstName, lastName, address },
+        { new: true, runValidators: true } // Ensures updated document is returned and validations are applied
+      );
+  
+      if (!customer) {
+        return res.status(404).json(new ApiResponse(404, "Customer not found"));
+      }
+  
+      return res.status(200).json(new ApiResponse(200, "Profile updated successfully", customer));
+    } catch (error) {
+      console.error("Error in EditCustomerProfile", error);
+      return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+  };
+  

@@ -1,5 +1,7 @@
 import express from 'express'
-import { customerLogin, customerSignUp } from '../controllers/customer.controller.js'
+import { customerLogin, customerSignUp, EditCustomerProfile, GetCustomerProfile } from '../controllers/customer.controller.js'
+import { VerifyToken } from '../middleware/Auth.middleware.js'
+import { VerifyCustomer } from '../middleware/customer.middleware.js'
 
 
 const router = express.Router()
@@ -9,8 +11,8 @@ router.post("/signup" , customerSignUp)
 router.post("/login" , customerLogin)
 
 
-router.post("/profile")
-router.post("/update")
+router.get("/profile" , VerifyToken,VerifyCustomer, GetCustomerProfile)
+router.patch("/update" , VerifyToken , VerifyCustomer , EditCustomerProfile)
 router.post("/otp")
 
 

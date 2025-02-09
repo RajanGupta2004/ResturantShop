@@ -17,15 +17,16 @@ export const comparePassword = async (password, hashedPassword) => {
 export const GenerateSignature = async (payload) => {
 
     try {
-
-        const accesstoken =  jwt.sign(payload, process.env.JWT_SECRET , {expiresIn:"1d"})
+        const accesstoken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" })
         return accesstoken
-        
 
     } catch (error) {
         console.log("Error ti generate token", error)
+        
 
     }
-    return
 }
+
+
+
 

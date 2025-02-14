@@ -11,6 +11,7 @@ const customerSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     otp: { type: Number, required: true },
     otp_expiry: { type: Date, required: true },
+    refreshToken:{type:String , required:true},
     lat: { type: Number },
     lng: { type: Number },
 

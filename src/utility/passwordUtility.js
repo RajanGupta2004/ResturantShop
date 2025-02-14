@@ -17,8 +17,10 @@ export const comparePassword = async (password, hashedPassword) => {
 export const GenerateSignature = async (payload) => {
 
     try {
-        const accesstoken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" })
-        return accesstoken
+        const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" })
+        const refreshToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "4d" })
+
+       return Promise.resolve({ accessToken, refreshToken })
 
     } catch (error) {
         console.log("Error ti generate token", error)

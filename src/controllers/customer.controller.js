@@ -2,6 +2,7 @@ import Customer from "../models/customer.model.js";
 import { ApiResponse } from "../utility/ApiResponse.js";
 import { GenerateOTP, sendOTPOnRequest } from "../utility/notificationUtlity.js";
 import { comparePassword, GeneratePassword, GenerateSignature } from "../utility/passwordUtility.js";
+import jwt from 'jsonwebtoken'
 
 
 export const customerSignUp = async (req, res) => {
@@ -59,9 +60,9 @@ export const customerSignUp = async (req, res) => {
             verified:user.verified
         }
 
-        const token = await GenerateSignature(payload)
+        const {accessToken , refreshToken} = await GenerateSignature(payload)
 
-        return res.status(200).json(new ApiResponse(201 , "user created" , {user , token} , ))
+        return res.status(200).json(new ApiResponse(201 , "user created" , {user , accessToken , refreshToken} , ))
 
     } catch (error) {
         console.log('Error in  customerSignUp ', error);
@@ -82,7 +83,7 @@ export const customerLogin = async (req, res) => {
 
         // find user exist or not
 
-        const customer = await Customer.findOne({email})
+        const customer = await Customer.findOne({email}).select("-refreshToken")
 
         if(!customer){
             return res.status(404).json(new ApiResponse(404 , "customer not found"))
@@ -104,14 +105,109 @@ export const customerLogin = async (req, res) => {
             email:customer.email,
             verified:customer.verified
         }
-        const token = await GenerateSignature(payload)
+        const { accessToken, refreshToken } = await GenerateSignature(payload)
+
+        console.log(accessToken , refreshToken)
+
+        customer.refreshToken = refreshToken
+
+        customer.save()
+
+        const options = {
+            httpOnly:true,
+            secure:true,
+            sameSite: "Strict", // Helps prevent CSRF attacks,
+            signed: true, // Prevents tampering
+        }
 
 
-        return res.status(200).json(new ApiResponse(200 , "Login successfull" , {customer , token}))
+        return res.status(200).cookie('accessToken', accessToken , options)
+        .cookie('refreshToken', refreshToken , options)
+        .json(new ApiResponse(200 , "Login successfull" , {customer , accessToken , refreshToken}))
 
     } catch (error) {
         console.log('Error in  customerSignUp ', error);
         return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+    }
+}
+
+
+
+export const refreshToken = async (req, res) => {
+    try {
+        const incommingRefreshToken = req.cookies?.token || req.headers?.authorization?.split(" ")[1];
+
+        if (!incommingRefreshToken) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorised request"
+            })
+        }
+
+        // verify token or decode
+
+        const decodedToken = jwt.verify(incommingRefreshToken, process.env.JWT_SECRET)
+        console.log("decodedToken", decodedToken)
+
+        if (!decodedToken) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid token "
+            })
+        }
+
+        // find user based on decoded token 
+
+        const user = await Customer.findById(decodedToken?._id)
+        // console.log("user", user)
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid access token.."
+            })
+        }
+
+
+        // compare the both token incomming refreshToken and refreshToken store in DB
+
+        if (incommingRefreshToken !== user.refreshToken) {
+            return res.status(401).json({
+                success: false,
+                message: "Refresh token is expired or used"
+            })
+
+        }
+
+        // generate new access token
+
+        const payload = {
+            _id:user._id,
+            email:user.email,
+            verified:user.verified
+        }
+        const { accessToken, refreshToken } = await GenerateSignature(payload)
+
+        // console.log("accessToken", accessToken)
+        // console.log("refreshToken", refreshToken)
+
+        const options = {
+            httpOnly:true,
+            secure:true,
+            sameSite: "Strict", // Helps prevent CSRF attacks,
+            signed: true, // Prevents tampering
+        }
+
+        return res.status(200)
+        .cookie('accessToken', accessToken , options)
+        .cookie('refreshToken', refreshToken , options)
+        .json({
+            success: true,
+            message: "new accesToken generated successfull..."
+        })
+
+    } catch (error) {
+        console.log("Refresh Token ERROR ", error)
+
     }
 }
 

@@ -1,4 +1,5 @@
 import express from 'express'
+import cookieParser from 'cookie-parser'
 import adminRoutes from './routes/admin.routes.js'
 import vandorRoutes from "./routes/vandor.routes.js"
 import shopingRoutes from './routes/shoping.routes.js'
@@ -8,7 +9,11 @@ const app = express()
 
 
 
+// app level All middleware
 app.use(express.json())
+app.use(cookieParser({
+    
+}))
 
 // ------------------load all routes---------------------------
 app.use("/admin" , adminRoutes)

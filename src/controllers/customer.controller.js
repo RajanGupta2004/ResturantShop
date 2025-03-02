@@ -1,8 +1,11 @@
 import Customer from "../models/customer.model.js";
+import Food from "../models/food.model.js";
+import Order from "../models/orders.model.js";
 import { ApiResponse } from "../utility/ApiResponse.js";
 import { GenerateOTP, sendOTPOnRequest } from "../utility/notificationUtlity.js";
 import { comparePassword, GeneratePassword, GenerateSignature } from "../utility/passwordUtility.js";
 import jwt from 'jsonwebtoken'
+import { v4 as uuidv4 } from "uuid";
 
 
 export const customerSignUp = async (req, res) => {
@@ -55,14 +58,14 @@ export const customerSignUp = async (req, res) => {
 
         // generate token 
         const payload = {
-            _id:user._id,
-            phone:user.phone,
-            verified:user.verified
+            _id: user._id,
+            phone: user.phone,
+            verified: user.verified
         }
 
-        const {accessToken , refreshToken} = await GenerateSignature(payload)
+        const { accessToken, refreshToken } = await GenerateSignature(payload)
 
-        return res.status(200).json(new ApiResponse(201 , "user created" , {user , accessToken , refreshToken} , ))
+        return res.status(200).json(new ApiResponse(201, "user created", { user, accessToken, refreshToken },))
 
     } catch (error) {
         console.log('Error in  customerSignUp ', error);
@@ -75,55 +78,55 @@ export const customerSignUp = async (req, res) => {
 export const customerLogin = async (req, res) => {
     try {
 
-        const {email , password} = req.body
+        const { email, password } = req.body
 
-        if(!email || !password){
-            return res.status(400).json(new ApiResponse(400 , "all filed are required..."))
+        if (!email || !password) {
+            return res.status(400).json(new ApiResponse(400, "all filed are required..."))
         }
 
         // find user exist or not
 
-        const customer = await Customer.findOne({email}).select("-refreshToken")
+        const customer = await Customer.findOne({ email }).select("-refreshToken")
 
-        if(!customer){
-            return res.status(404).json(new ApiResponse(404 , "customer not found"))
+        if (!customer) {
+            return res.status(404).json(new ApiResponse(404, "customer not found"))
         }
 
 
         // compare password
 
-        const isPasswordCorrect = await comparePassword(password , customer.password)
+        const isPasswordCorrect = await comparePassword(password, customer.password)
 
-        if(!isPasswordCorrect){
-            return res.status(401).json(new ApiResponse(401 , "Invalid email and password..."))
+        if (!isPasswordCorrect) {
+            return res.status(401).json(new ApiResponse(401, "Invalid email and password..."))
         }
 
 
         // generate token
         const payload = {
-            _id:customer._id,
-            email:customer.email,
-            verified:customer.verified
+            _id: customer._id,
+            email: customer.email,
+            verified: customer.verified
         }
         const { accessToken, refreshToken } = await GenerateSignature(payload)
 
-        console.log(accessToken , refreshToken)
+        console.log(accessToken, refreshToken)
 
         customer.refreshToken = refreshToken
 
         customer.save()
 
         const options = {
-            httpOnly:true,
-            secure:true,
-            sameSite: "Strict", // Helps prevent CSRF attacks,
-            signed: true, // Prevents tampering
+            // httpOnly: true,
+            // secure: true,
+            // sameSite: "Strict", // Helps prevent CSRF attacks,
+            // signed: true, // Prevents tampering
         }
 
 
-        return res.status(200).cookie('accessToken', accessToken , options)
-        .cookie('refreshToken', refreshToken , options)
-        .json(new ApiResponse(200 , "Login successfull" , {customer , accessToken , refreshToken}))
+        return res.status(200).cookie('accessToken', accessToken, options)
+            .cookie('refreshToken', refreshToken, options)
+            .json(new ApiResponse(200, "Login successfull", { customer, accessToken, refreshToken }))
 
     } catch (error) {
         console.log('Error in  customerSignUp ', error);
@@ -181,9 +184,9 @@ export const refreshToken = async (req, res) => {
         // generate new access token
 
         const payload = {
-            _id:user._id,
-            email:user.email,
-            verified:user.verified
+            _id: user._id,
+            email: user.email,
+            verified: user.verified
         }
         const { accessToken, refreshToken } = await GenerateSignature(payload)
 
@@ -191,19 +194,19 @@ export const refreshToken = async (req, res) => {
         // console.log("refreshToken", refreshToken)
 
         const options = {
-            httpOnly:true,
-            secure:true,
+            httpOnly: true,
+            secure: true,
             sameSite: "Strict", // Helps prevent CSRF attacks,
             signed: true, // Prevents tampering
         }
 
         return res.status(200)
-        .cookie('accessToken', accessToken , options)
-        .cookie('refreshToken', refreshToken , options)
-        .json({
-            success: true,
-            message: "new accesToken generated successfull..."
-        })
+            .cookie('accessToken', accessToken, options)
+            .cookie('refreshToken', refreshToken, options)
+            .json({
+                success: true,
+                message: "new accesToken generated successfull..."
+            })
 
     } catch (error) {
         console.log("Refresh Token ERROR ", error)
@@ -212,19 +215,19 @@ export const refreshToken = async (req, res) => {
 }
 
 
-export const GetCustomerProfile = async (req , res)=>{
+export const GetCustomerProfile = async (req, res) => {
     try {
         const customer = req.user
 
-        const customerProfile = await  Customer.findById(customer._id)
+        const customerProfile = await Customer.findById(customer._id)
         if (!customerProfile) {
-            return res.status(200).json(new ApiResponse(404 , "Customer Not found"))
+            return res.status(200).json(new ApiResponse(404, "Customer Not found"))
         }
 
-        return res.status(200).json(new ApiResponse(200 , "customer profile" , customerProfile));
-        
+        return res.status(200).json(new ApiResponse(200, "customer profile", customerProfile));
+
     } catch (error) {
-        console.log("Error in to get user profile" , error)
+        console.log("Error in to get user profile", error)
         return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
 
     }
@@ -232,22 +235,81 @@ export const GetCustomerProfile = async (req , res)=>{
 
 export const EditCustomerProfile = async (req, res) => {
     try {
-      const { firstName, lastName, address } = req.body;
-  
-      const customer = await Customer.findByIdAndUpdate(
-        req.user._id,
-        { firstName, lastName, address },
-        { new: true, runValidators: true } // Ensures updated document is returned and validations are applied
-      );
-  
-      if (!customer) {
-        return res.status(404).json(new ApiResponse(404, "Customer not found"));
-      }
-  
-      return res.status(200).json(new ApiResponse(200, "Profile updated successfully", customer));
+        const { firstName, lastName, address } = req.body;
+
+        const customer = await Customer.findByIdAndUpdate(
+            req.user._id,
+            { firstName, lastName, address },
+            { new: true, runValidators: true } // Ensures updated document is returned and validations are applied
+        );
+
+        if (!customer) {
+            return res.status(404).json(new ApiResponse(404, "Customer not found"));
+        }
+
+        return res.status(200).json(new ApiResponse(200, "Profile updated successfully", customer));
     } catch (error) {
-      console.error("Error in EditCustomerProfile", error);
-      return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+        console.error("Error in EditCustomerProfile", error);
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
     }
-  };
-  
+};
+
+
+
+
+export const createOrder = async (req, res) => {
+    try {
+
+        const { items } = req.body
+
+        if (!items) {
+            return res.status(400).json(new ApiResponse(400, "item data is required"))
+        }
+
+        const customerId = req.user._id;
+
+        const customer = await Customer.findById(customerId)
+
+        if (!customer) {
+            return res.status(404).json(new ApiResponse(404, "customer doest not exist"))
+        }
+
+        let totalPrice = 0;
+        const orderItems = [];
+
+        // Validate each food item and calculate total price
+        for (let item of items) {
+            const food = await Food.findById(item._id);
+            if (!food) {
+                return res.status(404).json(new ApiResponse(404, `Food item with ID ${item._id} not found`));
+            }
+            totalPrice += food.price * item.unit;
+
+            orderItems.push({
+                food: food._id,
+                unit: item.unit
+            });
+        }
+
+        const orderID = uuidv4();
+
+        const newOrder = await Order.create({
+            customerId,
+            orderID: orderID,
+            items: orderItems,
+            totalPrice,
+        })
+
+        if (!newOrder) {
+            return res.status(500).json(new ApiResponse(500, "Unable to create order"))
+        }
+
+        customer.orders.push(newOrder);
+        await customer.save();
+        return res.status(201).json(new ApiResponse(201, "New order created successfully...", newOrder))
+
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+
+    }
+}

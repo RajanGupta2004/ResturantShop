@@ -14,6 +14,7 @@ const customerSchema = new mongoose.Schema({
     refreshToken:{type:String , required:true},
     lat: { type: Number },
     lng: { type: Number },
+    orders:[{type:mongoose.Schema.Types.ObjectId , ref:"order"}]
 
 },{timestamps:true})
 

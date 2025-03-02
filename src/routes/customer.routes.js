@@ -1,5 +1,5 @@
 import express from 'express'
-import { createOrder, customerLogin, customerSignUp, EditCustomerProfile, GetCustomerProfile, refreshToken } from '../controllers/customer.controller.js'
+import { createOrder, customerLogin, customerSignUp, EditCustomerProfile, GetCustomerProfile, getOrderById, getOrders, refreshToken } from '../controllers/customer.controller.js'
 import { VerifyToken } from '../middleware/Auth.middleware.js'
 import { VerifyCustomer } from '../middleware/customer.middleware.js'
 
@@ -22,6 +22,8 @@ router.post("/otp")
 
 
 router.post("/create-order", VerifyToken ,VerifyCustomer  , createOrder)
+router.get("/getorder", VerifyToken ,VerifyCustomer  , getOrders)
+router.get("/getorder/:id", VerifyToken ,VerifyCustomer  , getOrderById)
 
 
 

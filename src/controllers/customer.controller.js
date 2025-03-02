@@ -313,3 +313,44 @@ export const createOrder = async (req, res) => {
 
     }
 }
+
+
+
+
+export const getOrders = async (req , res)=>{
+    try {
+
+        const customerId = req.user._id
+
+        const orders = await Customer.findById(customerId).populate("orders")
+
+        if(!orders){
+            return res.status(404).json(new ApiResponse(404 , "Data not found..."))
+        }
+
+        return res.status(200).json(new ApiResponse(200 , "created order" , orders))
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+        
+    }
+}
+
+
+
+export const getOrderById = async (req , res)=>{
+    try {
+        const orderID = req.params.id;
+
+        const orderData = await Order.findById(orderID).populate("items.food")
+
+        if(!orderData){
+            return res.status(404).json(new ApiResponse(404 , "Data not found..."))
+        }
+
+        return res.status(200).json(new ApiResponse(200 , "Data fetch successfully" , orderData))
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+        
+    }
+}

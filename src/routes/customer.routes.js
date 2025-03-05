@@ -1,11 +1,14 @@
 import express from 'express'
-import { createOrder, customerLogin, customerSignUp, EditCustomerProfile, GetCustomerProfile, getOrderById, getOrders, refreshToken } from '../controllers/customer.controller.js'
+import { AddToCart, createOrder, customerLogin, customerSignUp, EditCustomerProfile, GetCartItem, GetCustomerProfile, getOrderById, getOrders, refreshToken } from '../controllers/customer.controller.js'
 import { VerifyToken } from '../middleware/Auth.middleware.js'
 import { VerifyCustomer } from '../middleware/customer.middleware.js'
 
 
 const router = express.Router()
 
+
+
+//--------------customer login----------------------------------------
 
 router.post("/signup" , customerSignUp)
 router.post("/login" , customerLogin)
@@ -18,8 +21,13 @@ router.post("/otp")
 
 
 
-// -------------------- ceate order----------------------------
 
+// -------------------create order---------------------------------
+
+router.post("/addtoCart" ,VerifyToken ,VerifyCustomer, AddToCart)
+router.get("/addtoCart" ,VerifyToken ,VerifyCustomer, GetCartItem)
+
+// -------------------- create order----------------------------
 
 router.post("/create-order", VerifyToken ,VerifyCustomer  , createOrder)
 router.get("/getorder", VerifyToken ,VerifyCustomer  , getOrders)

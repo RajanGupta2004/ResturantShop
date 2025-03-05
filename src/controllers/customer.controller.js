@@ -317,40 +317,131 @@ export const createOrder = async (req, res) => {
 
 
 
-export const getOrders = async (req , res)=>{
+export const getOrders = async (req, res) => {
     try {
 
         const customerId = req.user._id
 
         const orders = await Customer.findById(customerId).populate("orders")
 
-        if(!orders){
-            return res.status(404).json(new ApiResponse(404 , "Data not found..."))
+        if (!orders) {
+            return res.status(404).json(new ApiResponse(404, "Data not found..."))
         }
 
-        return res.status(200).json(new ApiResponse(200 , "created order" , orders))
-        
+        return res.status(200).json(new ApiResponse(200, "created order", orders))
+
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
-        
+
     }
 }
 
 
 
-export const getOrderById = async (req , res)=>{
+export const getOrderById = async (req, res) => {
     try {
         const orderID = req.params.id;
 
         const orderData = await Order.findById(orderID).populate("items.food")
 
-        if(!orderData){
-            return res.status(404).json(new ApiResponse(404 , "Data not found..."))
+        if (!orderData) {
+            return res.status(404).json(new ApiResponse(404, "Data not found..."))
         }
 
-        return res.status(200).json(new ApiResponse(200 , "Data fetch successfully" , orderData))
+        return res.status(200).json(new ApiResponse(200, "Data fetch successfully", orderData))
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
-        
+
     }
 }
+
+
+
+export const AddToCart = async (req, res) => {
+    try {
+
+        const { foodId, unit } = req.body;
+
+        if (!foodId || !unit) {
+            return res.status(400).json(new ApiResponse(400, "foodId and unit is required...."))
+        }
+
+        // find food exist or not
+
+        const food = await Food.findById(foodId)
+
+        if (!food) {
+            return res.status(404).json(new ApiResponse(404, "Food is not present..."))
+        }
+
+        const customerId = req.user._id
+
+        const existingCustomer = await Customer.findById(customerId).populate("cart.food");;
+
+        if (!existingCustomer) {
+            return res.status(404).json(new ApiResponse(404, "Customer Not found"))
+        }
+
+        // find food same  exist in cart or not 
+
+        const existingFood = existingCustomer.cart.find((item) => item.food.toString() === foodId);
+
+        if (existingFood) {
+            existingCustomer.cart.unit += unit
+        } else {
+            existingCustomer.cart.push({ food: foodId, unit })
+        }
+
+        await existingCustomer.save();
+
+        return res.status(201).json(new ApiResponse(201 , "Item added successfully" , existingCustomer.cart));
+
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+}
+
+
+export const GetCartItem = async (req, res) => {
+    try {
+
+        const customerId = req.user._id
+
+        const customer = await Customer.findById(customerId);
+
+        if (!customer || customer.cart.length === 0) {
+            return res.status(404).json(new ApiResponse(404, "Cart is empty"));
+        }
+
+        return res.status(200).json(new ApiResponse(200 , "List of All customers...."))
+
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+}
+
+
+export const updateCartItem = async (req, res) => {
+    try {
+        const { foodId, unit } = req.body;
+        const customerId = req.user._id;
+
+        let customer = await Customer.findById(customerId);
+
+        if (!customer) {
+            return res.status(404).json(new ApiResponse(404, "Customer not found"));
+        }
+
+        const item = customer.cart.find(item => item.food.toString() === foodId);
+        if (!item) {
+            return res.status(404).json(new ApiResponse(404, "Item not found in cart"));
+        }
+
+        item.unit = unit;  // Update the quantity
+        await customer.save();
+
+        return res.status(200).json(new ApiResponse(200, "Cart updated", customer.cart));
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+};

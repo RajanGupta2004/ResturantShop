@@ -357,6 +357,9 @@ export const getOrderById = async (req, res) => {
 
 
 
+
+// ---------------------cart functionality----------------------------------
+
 export const AddToCart = async (req, res) => {
     try {
 
@@ -394,7 +397,7 @@ export const AddToCart = async (req, res) => {
 
         await existingCustomer.save();
 
-        return res.status(201).json(new ApiResponse(201 , "Item added successfully" , existingCustomer.cart));
+        return res.status(201).json(new ApiResponse(201, "Item added successfully", existingCustomer.cart));
 
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
@@ -413,7 +416,7 @@ export const GetCartItem = async (req, res) => {
             return res.status(404).json(new ApiResponse(404, "Cart is empty"));
         }
 
-        return res.status(200).json(new ApiResponse(200 , "List of All customers...."))
+        return res.status(200).json(new ApiResponse(200, "List of All customers...."))
 
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
@@ -445,3 +448,31 @@ export const updateCartItem = async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
     }
 };
+
+
+export const deletedCartItem = async (req, res) => {
+
+    try {
+
+        const customerId = req.user._id;
+
+
+        const customer = await Customer.findById(customerId).populate("cart.food");
+
+        if (!customer) {
+            return res.status(404).json(new ApiResponse(404, "Customer not found"));
+        }
+
+        if (customer.cart.length === 0) {
+            return res.status(200).json(new ApiResponse(200, "Cart is already empty"));
+        }
+
+        await Customer.updateOne({ _id: customerId }, { $set: { cart: [] } });
+
+        return res.status(200).json(new ApiResponse(200, "Cart Item deleted successfully...."))
+
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+
+}

@@ -1,5 +1,5 @@
 import express from 'express'
-import { AddToCart, createOrder, customerLogin, customerSignUp, EditCustomerProfile, GetCartItem, GetCustomerProfile, getOrderById, getOrders, refreshToken } from '../controllers/customer.controller.js'
+import { AddToCart, createOrder, customerLogin, customerSignUp, deletedCartItem, EditCustomerProfile, GetCartItem, GetCustomerProfile, getOrderById, getOrders, refreshToken, updateCartItem } from '../controllers/customer.controller.js'
 import { VerifyToken } from '../middleware/Auth.middleware.js'
 import { VerifyCustomer } from '../middleware/customer.middleware.js'
 
@@ -25,7 +25,9 @@ router.post("/otp")
 // -------------------create order---------------------------------
 
 router.post("/addtoCart" ,VerifyToken ,VerifyCustomer, AddToCart)
-router.get("/addtoCart" ,VerifyToken ,VerifyCustomer, GetCartItem)
+router.get("/GetCartItem" ,VerifyToken ,VerifyCustomer, GetCartItem)
+router.patch("/updateCartItem" ,VerifyToken ,VerifyCustomer, updateCartItem)
+router.delete("/deletedCartItem" ,VerifyToken ,VerifyCustomer, deletedCartItem)
 
 // -------------------- create order----------------------------
 

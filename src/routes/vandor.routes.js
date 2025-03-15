@@ -1,5 +1,5 @@
 import express from 'express'
-import { Addfood, GetCurrentOrder, Getfood, GetOrderDetails, GetVandorProfile, ProcessOrder, UpdateVandorProfile, UpdateVandorService, VandorLogin } from '../controllers/vandor.controller.js'
+import { Addfood, AddOffers, EditOffer, GetCurrentOrder, Getfood, GetOffers, GetOrderDetails, GetVandorProfile, ProcessOrder, UpdateVandorProfile, UpdateVandorService, VandorLogin } from '../controllers/vandor.controller.js'
 import { VerifyToken } from '../middleware/Auth.middleware.js'
 import { VerifyVendor } from '../middleware/vander.middleware.js'
 
@@ -19,6 +19,13 @@ router.get("/GetCurrentOrder" ,VerifyToken,VerifyVendor, GetCurrentOrder)
 
 router.patch('/order/:id/process',VerifyToken,VerifyVendor, ProcessOrder);
 router.get('/order/:id',VerifyToken,VerifyVendor, GetOrderDetails)
+
+
+
+// -------------------offer routes----------------------------------
+router.post('/offers',VerifyToken,VerifyVendor, AddOffers)
+router.get('/offers',VerifyToken,VerifyVendor, GetOffers)
+router.patch('/offers/:id',VerifyToken,VerifyVendor, EditOffer)
 
 
 

@@ -1,4 +1,5 @@
 import Food from "../models/food.model.js"
+import Offer from "../models/offers.model.js"
 import Order from "../models/orders.model.js"
 import Vandor from "../models/vandor.model.js"
 import { ApiResponse } from "../utility/ApiResponse.js"
@@ -266,6 +267,171 @@ export const ProcessOrder = async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
     }
 };
+
+
+export const AddOffers = async (req , res)=>{
+    try {
+
+        const {
+            offerType,
+            title,
+            description,
+            minValue,
+            discountType,
+            discountValue,
+            offerAmount,
+            startValidity,
+            endValidity,
+            promocode,
+            isActive,
+            bank,
+            bins,
+            pincode
+        } = req.body;
+
+
+        const user = req.user
+
+        const existingVandor = await Vandor.findById(user._id);
+
+        if(!existingVandor){
+            return res.status(404).json(new ApiResponse(404 , "Vandor not found"))
+        }
+
+
+        const existingOffer = await Offer.findOne({promocode:promocode})
+
+        if(existingOffer){
+            return res.status(400).json(new ApiResponse(400 , "Same promo Already exist...."))
+        }
+
+
+        const offer = await Offer.create({
+            offerType,
+            title,
+            description,
+            minValue,
+            discountType,
+            discountValue,
+            offerAmount,
+            startValidity,
+            endValidity,
+            promocode,
+            isActive,
+            bank,
+            bins,
+            pincode,
+            applicableVendor:existingVandor,
+        })
+
+
+        if(!offer){
+            return res.status(500).json(new ApiResponse(400 , "unable to create offer"))
+        }
+
+        return res.status(200).json(new ApiResponse(201 , "Offer created successfully" , offer))
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+    }
+}
+
+
+export const GetOffers = async (req, res) => {
+    try {
+        const user = req.user;
+        let currentOffer = [];
+
+        // Fetch all offers with vendor details
+        const offers = await Offer.find().populate("applicableVendor");
+
+        offers.forEach((item) => {
+            if (item.applicableVendor && item.applicableVendor._id.toString() === user._id.toString()) {
+                currentOffer.push(item);
+            }
+
+            if (item.offerType === "GENERIC") {
+                currentOffer.push(item);
+            }
+        });
+
+        return res.status(200).json(new ApiResponse(200, "Offers retrieved successfully", currentOffer));
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+};
+
+
+
+
+
+
+
+export const EditOffer = async (req , res)=>{
+    try {
+
+        const user = req.user;
+        const offerId = req.params.id
+        const {  offerType,
+            title,
+            description,
+            minValue,
+            discountType,
+            discountValue,
+            offerAmount,
+            startValidity,
+            endValidity,
+            promocode,
+            isActive,
+            bank,
+            bins,
+            pincode,} = req.body;
+
+        const vandor = await Vandor.findById(user._id);
+
+        if(!vandor){
+            return res.status(400).json(new ApiResponse(400 , "Vandor not found..."))
+        }
+
+
+        const existingOffer = await Offer.findById(offerId);
+
+        if(!existingOffer){
+            return res.status(400).json(new ApiResponse(400 , "Offer not found...")) 
+        }
+
+          // Ensure the vendor owns this offer before allowing updates
+          if (existingOffer.applicableVendor._id.toString() !== user._id.toString()) {
+            return res.status(403).json(new ApiResponse(403, "You are not authorized to edit this offer"));
+        }
+
+
+          // Update the offer with new data
+          existingOffer.offerType = offerType;
+          existingOffer.title = title;
+          existingOffer.description = description;
+          existingOffer.minValue = minValue;
+          existingOffer.discountValue = discountValue;
+          existingOffer.offerAmount = offerAmount;
+          existingOffer.startValidity = startValidity;
+          existingOffer.endValidity = endValidity;
+          existingOffer.promocode = promocode;
+          existingOffer.isActive = isActive;
+          existingOffer.bank = bank;
+          existingOffer.bins = bins;
+          existingOffer.pincode = pincode;
+  
+          // Save the updated offer
+          await existingOffer.save();
+          return res.status(200).json(new ApiResponse(200, "Offer updated successfully", existingOffer));
+
+        
+    } catch (error) {
+        console.log('Error to add food' , error);
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+    }
+}
+
 
 
 

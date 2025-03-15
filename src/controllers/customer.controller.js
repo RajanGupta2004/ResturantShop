@@ -276,6 +276,7 @@ export const createOrder = async (req, res) => {
 
         let totalPrice = 0;
         const orderItems = [];
+        let vandorId = null;
 
         // Validate each food item and calculate total price
         for (let item of items) {
@@ -283,6 +284,14 @@ export const createOrder = async (req, res) => {
             if (!food) {
                 return res.status(404).json(new ApiResponse(404, `Food item with ID ${item._id} not found`));
             }
+
+            // Check if all items belong to the same vendor
+            if (!vandorId) {
+                vandorId = food.vandorId; // Set vendorId from the first item
+            } else if (food.vandorId.toString() !== vandorId.toString()) {
+                return res.status(400).json(new ApiResponse(400, "All items must be from the same vendor"));
+            }
+
             totalPrice += food.price * item.unit;
 
             orderItems.push({
@@ -295,6 +304,7 @@ export const createOrder = async (req, res) => {
 
         const newOrder = await Order.create({
             customerId,
+            vandorId,
             orderID: orderID,
             items: orderItems,
             totalPrice,
@@ -313,6 +323,10 @@ export const createOrder = async (req, res) => {
 
     }
 }
+
+
+
+
 
 
 
@@ -410,13 +424,13 @@ export const GetCartItem = async (req, res) => {
 
         const customerId = req.user._id
 
-        const customer = await Customer.findById(customerId);
+        const customer = await Customer.findById(customerId).populate("cart.food");
 
         if (!customer || customer.cart.length === 0) {
             return res.status(404).json(new ApiResponse(404, "Cart is empty"));
         }
 
-        return res.status(200).json(new ApiResponse(200, "List of All customers...."))
+        return res.status(200).json(new ApiResponse(200, "List of All customers....", customer.cart))
 
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));

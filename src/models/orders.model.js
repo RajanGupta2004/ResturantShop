@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "customer", required: true },
+    vandorId: { type: mongoose.Schema.Types.ObjectId, ref: "vandor", required: true },
     orderID: { type: String, required: true, unique: true },
     items: [
         {
@@ -11,9 +12,18 @@ const orderSchema = new mongoose.Schema({
         }
     ],
     totalPrice: { type: Number, required: true }, // New field to store total price
-    status: { type: String, enum: ["pending", "confirmed", "delivered"], default: "pending" }, // New field
+    // paidAmount: { type: Number, required: true },
+    paidTrough:{type:String  },
+    paymentResponse:{type:String},
+    orderDate: { type: Date },
+    orderStatus: { type: String, enum: ["pending", "confirmed", "delivered"], default: "pending" }, // New field
+    remarks: { type: String },
+    deliveryId: { type: String },
+    readyTime: { type: Number },
+    appliedOffers:{type:Boolean},
+    offerId:{type:String},
     createdAt: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 const Order = mongoose.model("order", orderSchema);
 

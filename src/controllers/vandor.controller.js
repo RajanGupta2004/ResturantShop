@@ -1,4 +1,5 @@
 import Food from "../models/food.model.js"
+import Order from "../models/orders.model.js"
 import Vandor from "../models/vandor.model.js"
 import { ApiResponse } from "../utility/ApiResponse.js"
 import { comparePassword, GenerateSignature } from "../utility/passwordUtility.js"
@@ -166,7 +167,6 @@ export const Addfood = async (req , res)=>{
          return res.status(200).json(new ApiResponse(200 , "Food item created successfully" , existingVandor))
         
     } catch (error) {
-        console.log('Error to add food' , error);
         return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
     }
 }
@@ -193,10 +193,80 @@ export const Getfood = async (req , res)=>{
         return res.status(200).json(new ApiResponse(200 , "Foods data fetch successfully..." , foods))
         
     } catch (error) {
-        console.log('Error to add food' , error);
         return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
     }
 }
+
+
+
+
+
+
+
+export const GetCurrentOrder = async (req , res)=>{
+    try {
+
+        const user = req.user;
+
+        const orders = await Order.find({vandorId:user._id}).populate("items.food");
+
+        if(!orders){
+            return res.status(404).json(new ApiResponse(402 , "Order not found"))
+        }
+
+        return res.status(200).json(new ApiResponse(200 , "Data fetch Successfully" , orders))
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+    }
+}
+
+
+
+
+export const GetOrderDetails = async (req , res)=>{
+    try {
+
+        const orderID = req.params.id;
+
+        const order = await Order.find({orderID}).populate("items.food");
+
+        if(!order){
+            return res.status(404).json(new ApiResponse(402 , "Order not found"))
+        }
+
+        return res.status(200).json(new ApiResponse(200 , "order Details" , order));
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+    }
+}
+
+
+
+export const ProcessOrder = async (req, res) => {
+    try {
+        const orderID = req.params.id;
+        const { status, remark, readyTime } = req.body;
+
+        const order = await Order.findOne({ orderID }).populate("items.food");
+
+        if (!order) {
+            return res.status(404).json(new ApiResponse(404, "Order not found"));
+        }
+
+        order.orderStatus = status || order.orderStatus;
+        order.readyTime = readyTime || order.readyTime;
+        order.remarks = remark || order.remarks;
+
+        await order.save();
+
+        return res.status(200).json(new ApiResponse(200, "Order processed successfully", order));
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+};
+
 
 
 

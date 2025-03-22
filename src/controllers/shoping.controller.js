@@ -1,3 +1,4 @@
+import Offer from "../models/offers.model.js";
 import Vandor from "../models/vandor.model.js";
 import { ApiResponse } from "../utility/ApiResponse.js"
 
@@ -68,7 +69,7 @@ export const GetFoodIn30Min = async (req, res) => {
             vandor.foods.filter((item) => item.readyTime <= 30)
         ))
 
-        if(foodIn30min.length<=0){
+        if (foodIn30min.length <= 0) {
             return res.status(404).json(new ApiResponse(404, "Resturant  not found"))
         }
         return res.status(200).json(new ApiResponse(200, "Food  in 30min data fetch successfully", foodIn30min))
@@ -90,10 +91,10 @@ export const GetSearchFood = async (req, res) => {
         const result = await Vandor.find({ pincode: pincode, serviceAvailable: true }).populate("foods")
 
 
-        const searchFood = result.map((vandor)=>vandor.foods)
+        const searchFood = result.map((vandor) => vandor.foods)
 
-        if(searchFood.length<0){
-            return res.status(404).json(new ApiResponse(404 , "Food not found"))
+        if (searchFood.length < 0) {
+            return res.status(404).json(new ApiResponse(404, "Food not found"))
         }
 
         return res.status(200).json(new ApiResponse(200, "Food  in 30min data fetch successfully", searchFood))
@@ -118,16 +119,38 @@ export const ResturantById = async (req, res) => {
 
         const vandor = await Vandor.findById(id).populate("foods")
 
-        if(!vandor){
-            return res.status(404).json(new ApiResponse(404 , "Vandor not found..."))
+        if (!vandor) {
+            return res.status(404).json(new ApiResponse(404, "Vandor not found..."))
         }
         return res.status(200).json(new ApiResponse(200, "Food  in 30min data fetch successfully", vandor))
 
-        
+
 
     } catch (error) {
         console.log("Error in ResturantById ", error)
         return res.status(500).json(new ApiResponse(500, "Internal server error "))
 
+    }
+}
+
+
+export const GetAvailableOffers = async (req, res) => {
+    try {
+        const pincode = req.params.pincode
+
+        if (!pincode) {
+            return res.status(404).json(new ApiResponse(400, "pincode required..."))
+        }
+
+        const offers = await Offer.find({ isActive:true, pincode })
+
+        if(!offers){
+            return res.status(404).json(new ApiResponse(404, "Offres not found..."))
+        }
+
+        return res.status(200).json(new ApiResponse(200, "Available fetch successfully", offers))
+
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error "))
     }
 }

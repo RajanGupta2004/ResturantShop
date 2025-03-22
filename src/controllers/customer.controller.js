@@ -1,5 +1,6 @@
 import Customer from "../models/customer.model.js";
 import Food from "../models/food.model.js";
+import Offer from "../models/offers.model.js";
 import Order from "../models/orders.model.js";
 import { ApiResponse } from "../utility/ApiResponse.js";
 import { GenerateOTP, sendOTPOnRequest } from "../utility/notificationUtlity.js";
@@ -489,4 +490,51 @@ export const deletedCartItem = async (req, res) => {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
     }
 
+}
+
+
+
+export const VerifyOffer = async (req , res)=>{
+    try {
+
+        const customer = req.user;
+
+        const offerId = req.params.id;
+
+        const existimgCustomer = await Customer.findById(customer._id);
+
+        if(!existimgCustomer){
+            return res.status(404).json(new ApiResponse(400, "Customer not found"));
+        }
+
+        if(!offerId){
+            return res.status(400).json(new ApiResponse(400, "OfferId is required"));
+        }
+
+        const appliedOffer = await Offer.findById(offerId);
+
+        if(!appliedOffer){
+            return res.status(404).json(new ApiResponse(404, "Offer  not found"));
+        }
+
+        if(!appliedOffer.isActive){
+            return res.status(404).json(new ApiResponse(404, "Offer expired..."));
+        }
+
+        return res.status(200).json(new ApiResponse(200, "Offer verifyed successfully" , appliedOffer))
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+
+    }
+}
+
+
+
+export const CreatePayment = async (req , res)=>{
+    try {
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
 }

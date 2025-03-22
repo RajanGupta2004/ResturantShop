@@ -1,5 +1,5 @@
 import express from 'express'
-import { AddToCart, createOrder, customerLogin, customerSignUp, deletedCartItem, EditCustomerProfile, GetCartItem, GetCustomerProfile, getOrderById, getOrders, refreshToken, updateCartItem } from '../controllers/customer.controller.js'
+import { AddToCart, createOrder, CreatePayment, customerLogin, customerSignUp, deletedCartItem, EditCustomerProfile, GetCartItem, GetCustomerProfile, getOrderById, getOrders, refreshToken, updateCartItem, VerifyOffer } from '../controllers/customer.controller.js'
 import { VerifyToken } from '../middleware/Auth.middleware.js'
 import { VerifyCustomer } from '../middleware/customer.middleware.js'
 
@@ -22,12 +22,23 @@ router.post("/otp")
 
 
 
-// -------------------create order---------------------------------
+// -------------------cart functionality---------------------------------
 
 router.post("/addtoCart" ,VerifyToken ,VerifyCustomer, AddToCart)
 router.get("/GetCartItem" ,VerifyToken ,VerifyCustomer, GetCartItem)
 router.patch("/updateCartItem" ,VerifyToken ,VerifyCustomer, updateCartItem)
 router.delete("/deletedCartItem" ,VerifyToken ,VerifyCustomer, deletedCartItem)
+
+
+
+//--------------------------apply  offers---------------------------------
+router.get("/offers/verify/:id",VerifyToken ,VerifyCustomer , VerifyOffer)
+
+
+// ---------------------------create payment oders---------------------
+
+router.post("/payment",VerifyToken ,VerifyCustomer , CreatePayment)
+
 
 // -------------------- create order----------------------------
 

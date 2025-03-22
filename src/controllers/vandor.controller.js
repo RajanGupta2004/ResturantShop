@@ -372,7 +372,8 @@ export const EditOffer = async (req , res)=>{
 
         const user = req.user;
         const offerId = req.params.id
-        const {  offerType,
+        const { 
+            offerType,
             title,
             description,
             minValue,

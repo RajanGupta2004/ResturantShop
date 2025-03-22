@@ -107,6 +107,9 @@ export const UpdateVandorService = async (req, res) => {
 
         const user = req.user;
 
+        const {lat , lng} = req.body
+
+
 
         const existingVandor = await Vandor.findById(user._id)
 
@@ -116,6 +119,12 @@ export const UpdateVandorService = async (req, res) => {
         }
 
         existingVandor.serviceAvailable = !existingVandor.serviceAvailable
+        
+        if(lat && lng){
+            existingVandor.lat = lat,
+            existingVandor.lng = lng
+
+        }
 
         // save changes
 

@@ -13,7 +13,9 @@ const vandorSchema = new mongoose.Schema({
     serviceAvailable: { type: Boolean },
     coverImage: { type: [String] },
     rating: { type: Number },
-    foods: [{ type: mongoose.Schema.Types.ObjectId, ref: "food" }]
+    foods: [{ type: mongoose.Schema.Types.ObjectId, ref: "food" }],
+    lat: { type: Number },
+    lng: { type: Number },
 
 },{timestamps:true})
 

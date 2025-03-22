@@ -2,6 +2,7 @@ import Customer from "../models/customer.model.js";
 import Food from "../models/food.model.js";
 import Offer from "../models/offers.model.js";
 import Order from "../models/orders.model.js";
+import Transaction from "../models/Transaction.model.js";
 import { ApiResponse } from "../utility/ApiResponse.js";
 import { GenerateOTP, sendOTPOnRequest } from "../utility/notificationUtlity.js";
 import { comparePassword, GeneratePassword, GenerateSignature } from "../utility/passwordUtility.js";
@@ -258,72 +259,6 @@ export const EditCustomerProfile = async (req, res) => {
 
 
 
-export const createOrder = async (req, res) => {
-    try {
-
-        const { items } = req.body
-
-        if (!items) {
-            return res.status(400).json(new ApiResponse(400, "item data is required"))
-        }
-
-        const customerId = req.user._id;
-
-        const customer = await Customer.findById(customerId)
-
-        if (!customer) {
-            return res.status(404).json(new ApiResponse(404, "customer doest not exist"))
-        }
-
-        let totalPrice = 0;
-        const orderItems = [];
-        let vandorId = null;
-
-        // Validate each food item and calculate total price
-        for (let item of items) {
-            const food = await Food.findById(item._id);
-            if (!food) {
-                return res.status(404).json(new ApiResponse(404, `Food item with ID ${item._id} not found`));
-            }
-
-            // Check if all items belong to the same vendor
-            if (!vandorId) {
-                vandorId = food.vandorId; // Set vendorId from the first item
-            } else if (food.vandorId.toString() !== vandorId.toString()) {
-                return res.status(400).json(new ApiResponse(400, "All items must be from the same vendor"));
-            }
-
-            totalPrice += food.price * item.unit;
-
-            orderItems.push({
-                food: food._id,
-                unit: item.unit
-            });
-        }
-
-        const orderID = uuidv4();
-
-        const newOrder = await Order.create({
-            customerId,
-            vandorId,
-            orderID: orderID,
-            items: orderItems,
-            totalPrice,
-        })
-
-        if (!newOrder) {
-            return res.status(500).json(new ApiResponse(500, "Unable to create order"))
-        }
-
-        customer.orders.push(newOrder);
-        await customer.save();
-        return res.status(201).json(new ApiResponse(201, "New order created successfully...", newOrder))
-
-    } catch (error) {
-        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
-
-    }
-}
 
 
 
@@ -494,7 +429,7 @@ export const deletedCartItem = async (req, res) => {
 
 
 
-export const VerifyOffer = async (req , res)=>{
+export const VerifyOffer = async (req, res) => {
     try {
 
         const customer = req.user;
@@ -503,26 +438,26 @@ export const VerifyOffer = async (req , res)=>{
 
         const existimgCustomer = await Customer.findById(customer._id);
 
-        if(!existimgCustomer){
+        if (!existimgCustomer) {
             return res.status(404).json(new ApiResponse(400, "Customer not found"));
         }
 
-        if(!offerId){
+        if (!offerId) {
             return res.status(400).json(new ApiResponse(400, "OfferId is required"));
         }
 
         const appliedOffer = await Offer.findById(offerId);
 
-        if(!appliedOffer){
+        if (!appliedOffer) {
             return res.status(404).json(new ApiResponse(404, "Offer  not found"));
         }
 
-        if(!appliedOffer.isActive){
+        if (!appliedOffer.isActive) {
             return res.status(404).json(new ApiResponse(404, "Offer expired..."));
         }
 
-        return res.status(200).json(new ApiResponse(200, "Offer verifyed successfully" , appliedOffer))
-        
+        return res.status(200).json(new ApiResponse(200, "Offer verifyed successfully", appliedOffer))
+
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
 
@@ -531,10 +466,156 @@ export const VerifyOffer = async (req , res)=>{
 
 
 
-export const CreatePayment = async (req , res)=>{
+export const CreatePayment = async (req, res) => {
     try {
-        
+        const customer = req.user;
+        const { amount, paymentMode, offerId } = req.body;
+
+        let payableAmount = Number(amount);
+
+        const offer = await Offer.findById(offerId);
+        if (offer) {
+            payableAmount -= offer.discountValue;
+        }
+
+        // Perform payment API call
+        let paymentResponse = "Payment cash on delivery";
+        let status = "pending";
+
+        if (paymentMode !== "COD") {
+            try {
+                // Simulate API call for payment processing
+                const paymentResult = await PaymentService.processPayment({
+                    amount: payableAmount,
+                    customerId: customer._id,
+                    paymentMode
+                });
+
+                paymentResponse = paymentResult.response;
+                status = paymentResult.success ? "completed" : "failed";
+            } catch (paymentError) {
+                return res.status(400).json(new ApiResponse(400, "Payment failed", paymentError.message));
+            }
+        }
+
+        // Create transaction
+        const transaction = await Transaction.create({
+            customer: customer._id,
+            vendorId: "",
+            orderId: "",
+            orderValue: payableAmount,
+            offerUsed: offerId || "N/A",
+            status,
+            paymentMode,
+            paymentResponse
+        });
+
+        return res.status(201).json(new ApiResponse(201, "Payment processed successfully", transaction));
     } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+    }
+};
+
+
+
+
+const ValidateTransation = async (txnId) => {
+    const currentTransation = await Transaction.findById(txnId);
+    if (currentTransation) {
+        if (currentTransation.status !== "failed") {
+          return  { status: true, currentTransation }
+
+        }
+    }
+
+    return { status: false, currentTransation }
+}
+
+export const createOrder = async (req, res) => {
+    try {
+
+        const { txnId, amount, items } = req.body
+
+        if (!items) {
+            return res.status(400).json(new ApiResponse(400, "item data is required"))
+        }
+
+        const customerId = req.user._id;
+
+        const customer = await Customer.findById(customerId)
+
+        if (!customer) {
+            return res.status(404).json(new ApiResponse(404, "customer doest not exist"))
+        }
+
+        const { status, currentTransation } = await ValidateTransation(txnId);
+
+        if (!status) {
+            return res.status(404).json({ message: 'Error while Creating Order!' })
+        }
+
+        let totalPrice = 0;
+        const orderItems = [];
+        let vandorId = null;
+
+        // Validate each food item and calculate total price
+        for (let item of items) {
+            const food = await Food.findById(item._id);
+            if (!food) {
+                return res.status(404).json(new ApiResponse(404, `Food item with ID ${item._id} not found`));
+            }
+
+            // Check if all items belong to the same vendor
+            if (!vandorId) {
+                vandorId = food.vandorId; // Set vendorId from the first item
+            } else if (food.vandorId.toString() !== vandorId.toString()) {
+                return res.status(400).json(new ApiResponse(400, "All items must be from the same vendor"));
+            }
+
+            totalPrice += food.price * item.unit;
+
+            orderItems.push({
+                food: food._id,
+                unit: item.unit
+            });
+        }
+
+        const orderID = uuidv4();
+
+        const newOrder = await Order.create({
+            customerId,
+            vandorId,
+            orderID: orderID,
+            items: orderItems,
+            totalPrice,
+            paidAmount: amount,
+            orderDate: new Date(),
+            orderStatus: "pending",
+            remarks: "",
+            readyTime: 45
+
+        })
+
+
+        if (!newOrder) {
+            return res.status(500).json(new ApiResponse(500, "Unable to create order"))
+        }
+
+        if (currentTransation) {
+            currentTransation.vendorId = vandorId;
+            currentTransation.orderId = orderID;
+            currentTransation.status = 'completed';
+
+            await currentTransation.save();
+        }
+
+        customer.orders.push(newOrder);
+
+        await customer.save();
+        return res.status(201).json(new ApiResponse(201, "New order created successfully...", newOrder))
+
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error", error.message));
+
     }
 }

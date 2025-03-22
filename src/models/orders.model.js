@@ -12,7 +12,7 @@ const orderSchema = new mongoose.Schema({
         }
     ],
     totalPrice: { type: Number, required: true }, // New field to store total price
-    // paidAmount: { type: Number, required: true },
+    paidAmount: { type: Number, required: true },
     paidTrough:{type:String  },
     paymentResponse:{type:String},
     orderDate: { type: Date },
@@ -20,8 +20,8 @@ const orderSchema = new mongoose.Schema({
     remarks: { type: String },
     deliveryId: { type: String },
     readyTime: { type: Number },
-    appliedOffers:{type:Boolean},
-    offerId:{type:String},
+    // appliedOffers:{type:Boolean},
+    // offerId:{type:String},
     createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

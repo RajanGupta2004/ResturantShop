@@ -35,7 +35,7 @@ router.delete("/deletedCartItem" ,VerifyToken ,VerifyCustomer, deletedCartItem)
 router.get("/offers/verify/:id",VerifyToken ,VerifyCustomer , VerifyOffer)
 
 
-// ---------------------------create payment oders---------------------
+// ---------------------------create payment---------------------
 
 router.post("/payment",VerifyToken ,VerifyCustomer , CreatePayment)
 

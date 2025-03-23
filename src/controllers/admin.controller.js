@@ -1,3 +1,4 @@
+import Delivery from "../models/delivery.model.js"
 import Vandor from "../models/vandor.model.js"
 import { ApiResponse } from "../utility/ApiResponse.js"
 import { GeneratePassword } from "../utility/passwordUtility.js"
@@ -83,6 +84,55 @@ export const getVendorById = async (req, res) => {
 
     } catch (error) {
         console.log("Error in getVendor By Id vendor", error)
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+
+    }
+}
+
+
+export const VerifyDeliveryUserByAdmin = async( req , res)=>{
+    try {
+
+        const {_id , status} = req.body;
+
+        if (!_id || typeof status !== "boolean") {
+            return res.status(400).json(new ApiResponse(400, "Invalid request data"));
+        }
+
+        const deliveryUserProfile = await Delivery.findById(_id);
+
+        if(!deliveryUserProfile){
+            return res.status(404).json(new ApiResponse(404 , "Delivery not found"))
+        }
+
+        deliveryUserProfile.verified = status;
+
+        await deliveryUserProfile.save();
+        
+        return res.status(200).json(new ApiResponse(200, "Delivery user verification updated", deliveryUserProfile));
+        
+    } catch (error) {
+        return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
+
+    }
+}
+
+
+
+
+export const GetDeliveryUser = async( req , res)=>{
+    try {
+
+        const deliveryUserProfile = await Delivery.find();
+
+        if(!deliveryUserProfile){
+            return res.status(404).json(new ApiResponse(404 , "Delivery not found"))
+        }
+
+
+        return res.status(200).json(new ApiResponse(200, "Delivery users", deliveryUserProfile));
+        
+    } catch (error) {
         return res.status(500).json(new ApiResponse(500, "Internal server error ", error.message))
 
     }

@@ -7,13 +7,12 @@ const deliverySchema = new mongoose.Schema({
     firstName: { type: String, },
     lastName: { type: String },
     address: { type: String },
-    verified: { type: Boolean, required: true },
+    // verified: { type: Boolean, required: true },
     phone: { type: String, required: true },
-    otp: { type: Number, required: true },
-    otp_expiry: { type: Date, required: true },
-    refreshToken: { type: String },
+    verified:{type:Boolean , default:"false"},
     lat: { type: Number },
     lng: { type: Number },
+    pincode:{type:Number},
     isAvailable:{type:Boolean , default:false}
    
 

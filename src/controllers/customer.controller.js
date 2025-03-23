@@ -1,8 +1,10 @@
 import Customer from "../models/customer.model.js";
+import Delivery from "../models/delivery.model.js";
 import Food from "../models/food.model.js";
 import Offer from "../models/offers.model.js";
 import Order from "../models/orders.model.js";
 import Transaction from "../models/Transaction.model.js";
+import Vandor from "../models/vandor.model.js";
 import { ApiResponse } from "../utility/ApiResponse.js";
 import { GenerateOTP, sendOTPOnRequest } from "../utility/notificationUtlity.js";
 import { comparePassword, GeneratePassword, GenerateSignature } from "../utility/passwordUtility.js";
@@ -523,13 +525,58 @@ const ValidateTransation = async (txnId) => {
     const currentTransation = await Transaction.findById(txnId);
     if (currentTransation) {
         if (currentTransation.status !== "failed") {
-          return  { status: true, currentTransation }
+            return { status: true, currentTransation }
 
         }
     }
 
     return { status: false, currentTransation }
 }
+
+
+
+
+const assignOrderForDelivery = async (orderId, vendorId) => {
+    try {
+        const vendor = await Vandor.findById(vendorId);
+        if (!vendor) {
+            return { success: false, message: "Vendor not found" };
+        }
+
+        const { pincode, lat, lng } = vendor;
+
+        // Find available delivery users in the same pincode
+        const deliveryUsers = await Delivery.find({ pincode, verified: true, isAvailable: true });
+
+        if (!deliveryUsers.length) {
+            return { success: false, message: "No available delivery person in this area" };
+        }
+
+        // Select the first available delivery user
+        const deliveryUser = deliveryUsers[0];
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return { success: false, message: "Order not found" };
+        }
+
+        // Assign delivery person to the order
+        order.deliveryId = deliveryUser._id;
+        order.orderStatus = "assigned";
+        await order.save();
+
+        // Update delivery user's availability
+        deliveryUser.isAvailable = false;
+        await deliveryUser.save();
+
+        return { success: true, message: "Order assigned to delivery person", order };
+
+    } catch (error) {
+        console.error("Error assigning order:", error);
+        return { success: false, message: "Internal server error", error: error.message };
+    }
+};
+
 
 export const createOrder = async (req, res) => {
     try {
@@ -601,6 +648,8 @@ export const createOrder = async (req, res) => {
             return res.status(500).json(new ApiResponse(500, "Unable to create order"))
         }
 
+        customer.orders.push(newOrder);
+
         if (currentTransation) {
             currentTransation.vendorId = vandorId;
             currentTransation.orderId = orderID;
@@ -609,7 +658,11 @@ export const createOrder = async (req, res) => {
             await currentTransation.save();
         }
 
-        customer.orders.push(newOrder);
+        // assign food for delivery
+
+       await assignOrderForDelivery(newOrder._id, vandorId)
+
+
 
         await customer.save();
         return res.status(201).json(new ApiResponse(201, "New order created successfully...", newOrder))
